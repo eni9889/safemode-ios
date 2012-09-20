@@ -51,6 +51,7 @@ MSClassHook(AAAccountManager)
 MSMetaClassHook(AAAccountManager)
 
 MSClassHook(BBSectionInfo)
+MSClassHook(BKSApplicationLaunchSettings)
 
 MSClassHook(SBAlertItemsController)
 MSClassHook(SBButtonBar)
@@ -281,4 +282,18 @@ MSInstanceMessageHook0(void, SBStatusBarTimeView, tile) {
 
 MSInstanceMessageHook0(BOOL, BBSectionInfo, showsInNotificationCenter) {
     return NO;
+}
+
+
+// on iOS 6.0, Apple split parts of SpringBoard into a daemon called backboardd, including app launches
+// in order to allow safe mode to propogate into applications, we need to then tell backboardd here
+// XXX: (all of this should be replaced, however, with per-process launchd-mediated exception handling)
+
+MSInstanceMessageHook1(void, BKSApplicationLaunchSettings, setEnvironment, NSDictionary *, original) {
+    if (original == nil)
+        return MSOldCall(nil);
+
+    NSMutableDictionary *modified([original mutableCopy]);
+    [modified setObject:@"1" forKey:@"_MSSafeMode"];
+    return MSOldCall(modified);
 }
