@@ -96,8 +96,11 @@ void SafeModeAlertItem$alertSheet$buttonClicked$(id self, SEL sel, id sheet, int
         break;
 
         case 2:
-            // XXX: there are better ways of restarting SpringBoard that would actually save state
-            exit(0);
+            if (kCFCoreFoundationVersionNumber > 700)
+                system("killall backboardd");
+            else
+                // XXX: there are better ways of restarting SpringBoard that would actually save state
+                exit(0);
         break;
 
         case 3:
