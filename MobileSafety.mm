@@ -300,3 +300,19 @@ MSInstanceMessageHook1(void, BKSApplicationLaunchSettings, setEnvironment, NSDic
     [modified setObject:@"1" forKey:@"_MSSafeMode"];
     return MSOldCall(modified);
 }
+
+MSInitialize {
+    NSAutoreleasePool *pool([[NSAutoreleasePool alloc] init]);
+
+    // on iOS 6, backboardd is in charge of brightness, and freaks out when SpringBoard restarts :(
+    // the result is that the device is super dark until we attempt to update the brightness here.
+
+    if (kCFCoreFoundationVersionNumber >= 700) {
+        if (void (*GSEventSetBacklightLevel)(float) = reinterpret_cast<void (*)(float)>(dlsym(RTLD_DEFAULT, "GSEventSetBacklightLevel")))
+            if (NSMutableDictionary *defaults = [NSMutableDictionary dictionaryWithContentsOfFile:[NSString stringWithFormat:@"%@/Library/Preferences/com.apple.springboard.plist", NSHomeDirectory()]])
+                if (NSNumber *level = [defaults objectForKey:@"SBBacklightLevel2"])
+                    GSEventSetBacklightLevel([level floatValue]);
+    }
+
+    [pool release];
+}
