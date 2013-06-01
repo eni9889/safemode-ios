@@ -1,5 +1,5 @@
 /* Cydia Substrate - Powerful Code Insertion Platform
- * Copyright (C) 2008-2012  Jay Freeman (saurik)
+ * Copyright (C) 2008-2013  Jay Freeman (saurik)
 */
 
 /* GNU Lesser General Public License, Version 3 {{{ */
