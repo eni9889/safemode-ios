@@ -19,47 +19,12 @@
 **/
 /* }}} */
 
-%apt Package: com.saurik.substrate.safemode
-%apt Author: Jay Freeman (saurik) <saurik@saurik.com>
-
-%apt Name: Substrate Safe Mode
-%apt Description: safe mode safety extension (safe)
-
-%apt Depends: mobilesubstrate (>= 0.9.3367+38)
-
-%fflag 1
-%fflag 2
-
-%bundle com.apple.springboard
-
-%flag -framework Foundation
-%flag -framework UIKit
-
 #import <CoreFoundation/CoreFoundation.h>
 #import <Foundation/Foundation.h>
 #import <CoreGraphics/CGGeometry.h>
 #import <UIKit/UIKit.h>
 
-#include "CydiaSubstrate.h"
-
-MSClassHook(UIStatusBar)
-
-MSClassHook(UIImage)
-MSMetaClassHook(UIImage)
-
-MSClassHook(AAAccountManager)
-MSMetaClassHook(AAAccountManager)
-
-MSClassHook(BBSectionInfo)
-MSClassHook(BKSApplicationLaunchSettings)
-
-MSClassHook(SBAlertItemsController)
-MSClassHook(SBButtonBar)
-MSClassHook(SBIconController)
-MSClassHook(SBStatusBar)
-MSClassHook(SBStatusBarDataManager)
-MSClassHook(SBStatusBarTimeView)
-MSClassHook(SBUIController)
+#include <substrate.h>
 
 Class $SafeModeAlertItem;
 
@@ -126,7 +91,7 @@ void SafeModeAlertItem$configure$requirePasscodeForActions$(id self, SEL sel, BO
 }
 
 void SafeModeAlertItem$performUnlockAction(id self, SEL sel) {
-    [[$SBAlertItemsController sharedInstance] activateAlertItem:self];
+    [[%c(SBAlertItemsController) sharedInstance] activateAlertItem:self];
 }
 
 static void MSAlert() {
@@ -143,32 +108,36 @@ static void MSAlert() {
         objc_registerClassPair($SafeModeAlertItem);
     }
 
-    if ($SBAlertItemsController != nil)
-        [[$SBAlertItemsController sharedInstance] activateAlertItem:[[[$SafeModeAlertItem alloc] init] autorelease]];
+    if (%c(SBAlertItemsController) != nil)
+        [[%c(SBAlertItemsController) sharedInstance] activateAlertItem:[[[$SafeModeAlertItem alloc] init] autorelease]];
 }
 
 
 // XXX: on iOS 5.0, we really would prefer avoiding 
 
-MSInstanceMessageHook2(void, SBStatusBar, touchesEnded,withEvent, id, touches, id, event) {
+%hook SBStatusBar
+- (void) touchesEnded:(id)touches withEvent:(id)event {
     MSAlert();
-    MSOldCall(touches, event);
-}
+    %orig(touches, event);
+} %end
 
-MSInstanceMessageHook1(void, SBStatusBar, mouseDown, void *, event) {
+%hook SBStatusBar
+- (void) mouseDown:(void *)event {
     MSAlert();
-    MSOldCall(event);
-}
+    %orig(event);
+} %end
 
-MSInstanceMessageHook2(void, UIStatusBar, touchesBegan,withEvent, void *, touches, void *, event) {
+%hook UIStatusBar
+- (void) touchesBegan:(void *)touches withEvent:(void *)event {
     MSAlert();
-    MSOldCall(touches, event);
-}
+    %orig(touches, event);
+} %end
 
 
 // this fairly complex code came from Grant, to solve the "it Safe Mode"-in-bar bug
 
-MSInstanceMessageHook0(void, SBStatusBarDataManager, _updateTimeString) {
+%hook SBStatusBarDataManager
+- (void) _updateTimeString {
     char *_data(&MSHookIvar<char>(self, "_data"));
     if (_data == NULL)
         return;
@@ -189,7 +158,7 @@ MSInstanceMessageHook0(void, SBStatusBarDataManager, _updateTimeString) {
     size_t offset(cloakedOffset - enabledOffset);
     char *timeString(_data + offset);
     strcpy(timeString, "Exit Safe Mode");
-}
+} %end
 
 
 static bool alerted_;
@@ -205,28 +174,31 @@ static void AlertIfNeeded() {
 // on iOS 4.3 and above we can use this advertisement, which seems to check every time the user unlocks
 // XXX: verify that this still works on iOS 5.0
 
-MSClassMessageHook0(void, AAAccountManager, showMobileMeOfferIfNecessary) {
+%hook AAAccountManager
++ (void) showMobileMeOfferIfNecessary {
     AlertIfNeeded();
-}
+} %end
 
 
 // -[SBIconController showInfoAlertIfNeeded] explains how to drag icons around the iPhone home screen
 // it used to be shown to users when they unlocked their screen for the first time, and happened every unlock
 // however, as of iOS 4.3, it got relegated to only appearing once the user installed an app or web clip
 
-MSInstanceMessageHook0(void, SBIconController, showInfoAlertIfNeeded) {
+%hook SBIconController
+- (void) showInfoAlertIfNeeded {
     AlertIfNeeded();
-}
+} %end
 
 
 // the icon state, including crazy configurations like Five Icon Dock, is stored in SpringBoard's defaults
 // unfortunately, SpringBoard on iOS 2.0 and 2.1 (maybe 2.2 as well) buffer overrun with more than 4 icons
 // there is a third party package called IconSupport that remedies this, but not everyone is using it yet
 
-MSInstanceMessageHook0(int, SBButtonBar, maxIconColumns) {
+%hook SBButtonBar
+- (int) maxIconColumns {
     static int max;
     if (max == 0) {
-        max = MSOldCall();
+        max = %orig();
         if (NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults])
             if (NSDictionary *iconState = [defaults objectForKey:@"iconState"])
                 if (NSDictionary *buttonBar = [iconState objectForKey:@"buttonBar"])
@@ -238,11 +210,12 @@ MSInstanceMessageHook0(int, SBButtonBar, maxIconColumns) {
                                     max = count;
                             }
     } return max;
-}
+} %end
 
 
-MSInstanceMessageHook0(id, SBUIController, init) {
-    if ((self = MSOldCall()) != nil) {
+%hook SBUIController
+- (id) init {
+    if ((self = %orig()) != nil) {
         UIView *&_contentLayer(MSHookIvar<UIView *>(self, "_contentLayer"));
         UIView *&_contentView(MSHookIvar<UIView *>(self, "_contentView"));
 
@@ -257,15 +230,17 @@ MSInstanceMessageHook0(id, SBUIController, init) {
         if (layer != nil)
             [layer setBackgroundColor:[UIColor darkGrayColor]];
     } return self;
-}
+} %end
 
 #define Paper_ "/Library/MobileSubstrate/MobileSafety.png"
 
-MSClassMessageHook0(UIImage *, UIImage, defaultDesktopImage) {
+%hook UIImage
++ (UIImage *) defaultDesktopImage {
     return [UIImage imageWithContentsOfFile:@Paper_];
-}
+} %end
 
-MSInstanceMessageHook0(void, SBStatusBarTimeView, tile) {
+%hook SBStatusBarTimeView
+- (void) tile {
     NSString *&_time(MSHookIvar<NSString *>(self, "_time"));
     CGRect &_textRect(MSHookIvar<CGRect>(self, "_textRect"));
     if (_time != nil)
@@ -277,31 +252,33 @@ MSInstanceMessageHook0(void, SBStatusBarTimeView, tile) {
     _textRect.size = size;
     _textRect.origin.x = (frame.size.width - size.width) / 2;
     _textRect.origin.y = (frame.size.height - size.height) / 2;
-}
+} %end
 
 
 // notification widgets ("wee apps" or "bulletin board sections") are capable of crashing SpringBoard
 // unfortunately, which ones are in use are stored in SpringBoard's defaults, so we need to turn them off
 
-MSInstanceMessageHook0(BOOL, BBSectionInfo, showsInNotificationCenter) {
+%hook BBSectionInfo
+- (BOOL) showsInNotificationCenter {
     return NO;
-}
+} %end
 
 
 // on iOS 6.0, Apple split parts of SpringBoard into a daemon called backboardd, including app launches
 // in order to allow safe mode to propogate into applications, we need to then tell backboardd here
 // XXX: (all of this should be replaced, however, with per-process launchd-mediated exception handling)
 
-MSInstanceMessageHook1(void, BKSApplicationLaunchSettings, setEnvironment, NSDictionary *, original) {
+%hook BKSApplicationLaunchSettings
+- (void) setEnvironment:(NSDictionary *)original {
     if (original == nil)
-        return MSOldCall(nil);
+        return %orig(nil);
 
     NSMutableDictionary *modified([original mutableCopy]);
     [modified setObject:@"1" forKey:@"_MSSafeMode"];
-    return MSOldCall(modified);
-}
+    return %orig(modified);
+} %end
 
-MSInitialize {
+%ctor {
     NSAutoreleasePool *pool([[NSAutoreleasePool alloc] init]);
 
     // on iOS 6, backboardd is in charge of brightness, and freaks out when SpringBoard restarts :(
