@@ -1,5 +1,5 @@
-TARGET := iphone:5.1:2.0
-ARCHS := armv6
+TARGET := iphone:7.0:2.0
+ARCHS := armv6 arm64
 PACKAGE_VERSION := $(shell ./version.sh)
 
 include theos/makefiles/common.mk
