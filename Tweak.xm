@@ -278,6 +278,11 @@ static void AlertIfNeeded() {
 
 #define Paper_ "/Library/MobileSubstrate/MobileSafety.png"
 
+%hook SBWallpaperImage
++ (id) alloc {
+    return nil;
+} %end
+
 %hook UIImage
 + (UIImage *) defaultDesktopImage {
     return [UIImage imageWithContentsOfFile:@Paper_];
