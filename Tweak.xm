@@ -308,6 +308,16 @@ static void AlertIfNeeded() {
 } %end
 
 
+// we don't want this state persisted back to disk, however: that is just really really irritating
+
+%hook BBServer
+- (void) _writeBehaviorOverrides {}
+- (void) _writeSectionOrder {}
+- (void) _writeClearedSections {}
+- (void) _writeSectionInfo {}
+%end
+
+
 // on iOS 6.0, Apple split parts of SpringBoard into a daemon called backboardd, including app launches
 // in order to allow safe mode to propogate into applications, we need to then tell backboardd here
 // XXX: (all of this should be replaced, however, with per-process launchd-mediated exception handling)
