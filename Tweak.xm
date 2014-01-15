@@ -55,7 +55,7 @@ Class $SafeModeAlertItem;
 - (void) setNumberOfRows:(NSInteger)rows;
 @end
 
-void SafeModeAlertItem$alertSheet$buttonClicked$(id self, SEL sel, id sheet, int button) {
+void SafeModeButtonClicked(int button) {
     switch (button) {
         case 1:
         break;
@@ -72,7 +72,15 @@ void SafeModeAlertItem$alertSheet$buttonClicked$(id self, SEL sel, id sheet, int
             [[UIApplication sharedApplication] applicationOpenURL:[NSURL URLWithString:@"http://cydia.saurik.com/safemode/"]];
         break;
     }
+}
 
+void SafeModeAlertItem$alertSheet$buttonClicked$(id self, SEL sel, id sheet, int button) {
+    SafeModeButtonClicked(button);
+    [self dismiss];
+}
+
+void SafeModeAlertItem$alertView$clickedButtonAtIndex$(id self, SEL sel, id sheet, NSInteger button) {
+    SafeModeButtonClicked(button + 1);
     [self dismiss];
 }
 
@@ -103,6 +111,7 @@ static void MSAlert() {
             return;
 
         class_addMethod($SafeModeAlertItem, @selector(alertSheet:buttonClicked:), (IMP) &SafeModeAlertItem$alertSheet$buttonClicked$, "v@:@i");
+        class_addMethod($SafeModeAlertItem, @selector(alertView:clickedButtonAtIndex:), (IMP) &SafeModeAlertItem$alertView$clickedButtonAtIndex$, "v@:@i");
         class_addMethod($SafeModeAlertItem, @selector(configure:requirePasscodeForActions:), (IMP) &SafeModeAlertItem$configure$requirePasscodeForActions$, "v@:cc");
         class_addMethod($SafeModeAlertItem, @selector(performUnlockAction), (IMP) SafeModeAlertItem$performUnlockAction, "v@:");
         objc_registerClassPair($SafeModeAlertItem);
