@@ -2,6 +2,7 @@ Package: com.saurik.substrate.safemode
 Author: Jay Freeman (saurik) <saurik@saurik.com>
 Name: Substrate Safe Mode
 Description: safe mode safety extension (safe)
+Depiction: http://cydia.saurik.com/info/com.saurik.substrate.safemode/
 Depends: mobilesubstrate (>= 0.9.3367+38)
 Architecture: iphoneos-arm
 Maintainer: Jay Freeman (saurik) <saurik@saurik.com>
