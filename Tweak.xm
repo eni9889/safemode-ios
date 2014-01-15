@@ -205,24 +205,33 @@ static void AlertIfNeeded() {
     MSAlert();
 }
 
-// on iOS 7 (maybe also iOS 6) we should really just hook the unlock mechanism
-// XXX: deterine where this works and maybe unify this code
-
+// iOS 7
 %hook SBLockScreenManager
 - (void) _finishUIUnlockFromSource:(int)source withOptions:(id)options {
     %orig;
     AlertIfNeeded();
 } %end
 
-
-// on iOS 4.3 and above we can use this advertisement, which seems to check every time the user unlocks
-// XXX: verify that this still works on iOS 5.0
-
-%hook AAAccountManager
-+ (void) showMobileMeOfferIfNecessary {
+// iOS 6
+%hook SBAwayController
+- (void) _finishUnlockWithSound:(BOOL)sound unlockSource:(int)source isAutoUnlock:(BOOL)is {
+    %orig;
     AlertIfNeeded();
 } %end
 
+// iOS 5
+%hook SBAwayController
+- (void) _unlockWithSound:(BOOL)sound isAutoUnlock:(BOOL)is unlockSource:(int)source {
+    %orig;
+    AlertIfNeeded();
+} %end
+
+// iOS 4.3 XXX: check lower versions
+%hook SBAwayController
+- (void) _unlockWithSound:(BOOL)sound isAutoUnlock:(BOOL)is unlockType:(int)type {
+    %orig;
+    AlertIfNeeded();
+} %end
 
 // -[SBIconController showInfoAlertIfNeeded] explains how to drag icons around the iPhone home screen
 // it used to be shown to users when they unlocked their screen for the first time, and happened every unlock
