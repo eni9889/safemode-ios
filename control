@@ -8,3 +8,5 @@ Architecture: iphoneos-arm
 Maintainer: Jay Freeman (saurik) <saurik@saurik.com>
 Priority: optional
 Section: Tweaks
+Conflicts: safe-mode-fixer-ios7
+Replaces: safe-mode-fixer-ios7
