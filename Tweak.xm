@@ -205,6 +205,15 @@ static void AlertIfNeeded() {
     MSAlert();
 }
 
+// on iOS 7 (maybe also iOS 6) we should really just hook the unlock mechanism
+// XXX: deterine where this works and maybe unify this code
+
+%hook SBLockScreenManager
+- (void) _finishUIUnlockFromSource:(int)source withOptions:(id)options {
+    %orig;
+    AlertIfNeeded();
+} %end
+
 
 // on iOS 4.3 and above we can use this advertisement, which seems to check every time the user unlocks
 // XXX: verify that this still works on iOS 5.0
