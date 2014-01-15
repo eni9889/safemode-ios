@@ -170,6 +170,32 @@ static void MSAlert() {
 } %end
 
 
+// this /insanely/ complex code came from that parrot guy... omg this is getting bad
+
+@interface SBStatusBarStateAggregator : NSObject
+- (void) _stopTimeItemTimer;
+@end
+
+%hook SBStatusBarStateAggregator
+
+- (void) _updateTimeItems {
+    if ([self respondsToSelector:@selector(_stopTimeItemTimer)])
+        [self _stopTimeItemTimer];
+    %orig;
+}
+
+- (void) _restartTimeItemTimer {
+}
+
+- (void) _resetTimeItemFormatter {
+    %orig;
+    if (NSDateFormatter *df = MSHookIvar<NSDateFormatter *>(self, "_timeItemDateFormatter"))
+        [df setDateFormat:@"'Exit' 'Safe' 'Mode'"];
+}
+
+%end
+
+
 static bool alerted_;
 
 static void AlertIfNeeded() {
