@@ -28,10 +28,24 @@
 
 Class $SafeModeAlertItem;
 
+@interface SpringBoard : UIApplication {
+}
+- (void)applicationDidFinishLaunching:(id)arg1;
+@end
+
 @interface SBAlertItem : NSObject {
 }
 - (UIAlertView *) alertSheet;
 - (void) dismiss;
+@end
+
+@interface SBLockScreenManager : NSObject{
+}
++(id)sharedInstanceIfExists;
++(id)sharedInstance;
++(id)_sharedInstanceCreateIfNeeded:(BOOL)needed;
+-(void)unlockUIFromSource:(int)source withOptions:(id)options;
+- (void)turnOnScreenFullyWithBacklightSource:(int)arg1;
 @end
 
 @interface SBAlertItemsController : NSObject {
@@ -338,12 +352,22 @@ static void AlertIfNeeded() {
 
 %hook BKSApplicationLaunchSettings
 - (void) setEnvironment:(NSDictionary *)original {
+    NSLog(@"Original is: %@", original);
     if (original == nil)
         return %orig(nil);
 
     NSMutableDictionary *modified([original mutableCopy]);
     [modified setObject:@"1" forKey:@"_MSSafeMode"];
     return %orig(modified);
+} %end
+
+%hook SpringBoard
+- (void)applicationDidFinishLaunching:(id)arg1 {
+    %orig;
+    NSLog(@"applicationDidFinishLaunching: %@", arg1);
+    sleep(10);
+    system("killall backboardd");
+
 } %end
 
 %ctor {
